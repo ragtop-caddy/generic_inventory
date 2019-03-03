@@ -14,11 +14,11 @@ type Transaction struct {
 	Campus   string `json:"campus,omitempty"`
 	Students int    `json:"students,omitempty"`
 	Action   string `json:"action,omitempty"`
+	Amount   int    `json:"amount,omitempty"`
 }
 
 // Header - Information standard to all entries
 type Header struct {
-	SKU         string        `json:"sku,omitempty"`
 	Type        string        `json:"type,omitempty"`
 	Description string        `json:"description,omitempty"`
 	Stock       int           `json:"stock,omitempty"`
@@ -36,6 +36,7 @@ type Detail struct {
 
 // Entry - Defines various types of inventory
 type Entry struct {
+	SKU     string  `json:"sku,omitempty"`
 	Header  *Header `json:"header,omitempty"`
 	Details *Detail `json:"details,omitempty"`
 }
@@ -51,7 +52,7 @@ func GetEntries(w http.ResponseWriter, r *http.Request) {
 func GetEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	for _, item := range entries {
-		if item.Header.SKU == params["sku"] {
+		if item.SKU == params["sku"] {
 			json.NewEncoder(w).Encode(item)
 			return
 		}
@@ -63,7 +64,7 @@ func CreateEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var entry Entry
 	_ = json.NewDecoder(r.Body).Decode(&entry)
-	entry.Header.SKU = params["sku"]
+	entry.SKU = params["sku"]
 	entries = append(entries, entry)
 	json.NewEncoder(w).Encode(entry)
 }
@@ -72,7 +73,7 @@ func CreateEntry(w http.ResponseWriter, r *http.Request) {
 func DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	for index, item := range entries {
-		if item.Header.SKU == params["sku"] {
+		if item.SKU == params["sku"] {
 			entries = append(entries[:index], entries[index+1:]...)
 			break
 		}
@@ -83,6 +84,32 @@ func DeleteEntry(w http.ResponseWriter, r *http.Request) {
 // main - our main function
 func main() {
 	router := mux.NewRouter()
+
+	entries = append(entries, Entry{
+		SKU: "1",
+		Header: &Header{
+			Type:        "pant",
+			Description: "boys small pant",
+			Stock:       5,
+			History: []Transaction{
+				Transaction{
+					ISODate:  "1234",
+					Campus:   "duffy",
+					Students: 0,
+					Action:   "create",
+				},
+			},
+		},
+		Details: &Detail{
+			Gender: "m",
+			Color:  "blk",
+			Size:   "small",
+			Style:  "slacks",
+			Fit:    "loose",
+		},
+	},
+	)
+
 	router.HandleFunc("/inventory", GetEntries).Methods("GET")
 	router.HandleFunc("/inventory/{sku}", GetEntry).Methods("GET")
 	router.HandleFunc("/inventory/{sku}", CreateEntry).Methods("POST")
