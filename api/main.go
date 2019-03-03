@@ -16,8 +16,8 @@ type Transaction struct {
 	Action   string `json:"action,omitempty"`
 }
 
-// EntryHeader - Information standard to all objects
-type EntryHeader struct {
+// Header - Information standard to all entries
+type Header struct {
 	SKU         string        `json:"sku,omitempty"`
 	Type        string        `json:"type,omitempty"`
 	Description string        `json:"description,omitempty"`
@@ -25,8 +25,8 @@ type EntryHeader struct {
 	History     []Transaction `json:"history,omitempty"`
 }
 
-// GarmentDetail - Defines Apparel specific details
-type GarmentDetail struct {
+// Detail - Defines entry details
+type Detail struct {
 	Gender string `json:"gender,omitempty"`
 	Color  string `json:"color,omitempty"`
 	Size   string `json:"size,omitempty"`
@@ -34,23 +34,23 @@ type GarmentDetail struct {
 	Fit    string `json:"fit,omitempty"`
 }
 
-// Garment - Defines various types of apparel
-type Garment struct {
-	Header  *EntryHeader   `json:"header,omitempty"`
-	Details *GarmentDetail `json:"details,omitempty"`
+// Entry - Defines various types of inventory
+type Entry struct {
+	Header  *Header `json:"header,omitempty"`
+	Details *Detail `json:"details,omitempty"`
 }
 
-var apparel []Garment
+var entries []Entry
 
-// GetApparel - Return a json object containing people
-func GetApparel(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(apparel)
+// GetEntries - Return a json object containing people
+func GetEntries(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(entries)
 }
 
-// GetGarment - Return a json object containing one person
-func GetGarment(w http.ResponseWriter, r *http.Request) {
+// GetEntry - Return a json object containing one person
+func GetEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	for _, item := range apparel {
+	for _, item := range entries {
 		if item.Header.SKU == params["sku"] {
 			json.NewEncoder(w).Encode(item)
 			return
@@ -58,34 +58,34 @@ func GetGarment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CreateGarment - Create a json object containing one person
-func CreateGarment(w http.ResponseWriter, r *http.Request) {
+// CreateEntry - Create a json object containing one person
+func CreateEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	var garment Garment
-	_ = json.NewDecoder(r.Body).Decode(&garment)
-	garment.Header.SKU = params["header"]
-	apparel = append(apparel, garment)
-	json.NewEncoder(w).Encode(apparel)
+	var entry Entry
+	_ = json.NewDecoder(r.Body).Decode(&entry)
+	entry.Header.SKU = params["sku"]
+	entries = append(entries, entry)
+	json.NewEncoder(w).Encode(entry)
 }
 
-// DeletePerson - Delete a person
-func DeletePerson(w http.ResponseWriter, r *http.Request) {
+// DeleteEntry - Delete a person
+func DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	for index, item := range people {
-		if item.ID == params["id"] {
-			people = append(people[:index], people[index+1:]...)
+	for index, item := range entries {
+		if item.Header.SKU == params["sku"] {
+			entries = append(entries[:index], entries[index+1:]...)
 			break
 		}
-		json.NewEncoder(w).Encode(people)
+		json.NewEncoder(w).Encode(item)
 	}
 }
 
-// our main function
+// main - our main function
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/people", GetPeople).Methods("GET")
-	router.HandleFunc("/people/{id}", GetPerson).Methods("GET")
-	router.HandleFunc("/people/{id}", CreatePerson).Methods("POST")
-	router.HandleFunc("/people/{id}", DeletePerson).Methods("DELETE")
+	router.HandleFunc("/inventory", GetEntries).Methods("GET")
+	router.HandleFunc("/inventory/{sku}", GetEntry).Methods("GET")
+	router.HandleFunc("/inventory/{sku}", CreateEntry).Methods("POST")
+	router.HandleFunc("/inventory/{sku}", DeleteEntry).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
