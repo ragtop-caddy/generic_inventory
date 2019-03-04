@@ -32,4 +32,10 @@ var routes = Routes{
 		"/inventory/{sku}",
 		CreateEntry,
 	},
+	Route{
+		"Delete Entry",
+		"DELETE",
+		"/inventory/{sku}",
+		DeleteEntry,
+	},
 }
