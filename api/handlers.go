@@ -12,14 +12,24 @@ import (
 // GetEntries - Return a json object containing people
 func GetEntries(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(entries)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(entries); err != nil {
+		panic(err)
+	}
 }
 
 // GetEntry - Return a json object containing one person
 func GetEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	for _, item := range entries {
-		if item.SKU == params["sku"] {
-			json.NewEncoder(w).Encode(item)
+	for _, entry := range entries {
+		if entry.SKU == params["sku"] {
+			json.NewEncoder(w).Encode(entry)
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(entry); err != nil {
+				panic(err)
+			}
 			return
 		}
 	}
@@ -59,11 +69,15 @@ func CreateEntry(w http.ResponseWriter, r *http.Request) {
 // DeleteEntry - Delete a person
 func DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	for index, item := range entries {
-		if item.SKU == params["sku"] {
+	for index, entry := range entries {
+		if entry.SKU == params["sku"] {
 			entries = append(entries[:index], entries[index+1:]...)
 			break
 		}
-		json.NewEncoder(w).Encode(item)
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(entry); err != nil {
+			panic(err)
+		}
 	}
 }
