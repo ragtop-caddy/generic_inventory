@@ -82,12 +82,31 @@ func DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var p Page
-
 // GetIndex - Return the main HTML page for the site
 func GetIndex(w http.ResponseWriter, r *http.Request) {
 	p := &Page{Title: "Hello", Body: []byte("This is a sample Page.")}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	renderTemplate(w, "view", p)
+}
+
+// GetCSS - Return CSS Files from the Filesystem
+func GetCSS(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	w.Header().Set("Content-Type", "text/css")
+	http.ServeFile(w, r, "./css/"+params["cssfile"])
+}
+
+// GetJS - Return Javascript Files from the Filesystem
+func GetJS(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	w.Header().Set("Content-Type", "application/javascript")
+	http.ServeFile(w, r, "./js/"+params["jsfile"])
+}
+
+// GetIMG - Return Image Files from the Filesystem
+func GetIMG(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	w.Header().Set("Content-Type", "image/png")
+	http.ServeFile(w, r, "./img/"+params["imgfile"])
 }

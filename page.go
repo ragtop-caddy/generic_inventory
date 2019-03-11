@@ -5,3 +5,5 @@ type Page struct {
 	Title string
 	Body  []byte
 }
+
+var p Page
