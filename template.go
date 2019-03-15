@@ -6,6 +6,6 @@ import (
 )
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	t, _ := template.ParseFiles("index.html")
+	t, _ := template.ParseFiles("./templates/index.html")
 	t.Execute(w, p)
 }
