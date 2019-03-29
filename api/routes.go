@@ -1,4 +1,4 @@
-package main
+package api
 
 import "net/http"
 
@@ -20,24 +20,24 @@ var routes = Routes{
 		"/api/inventory",
 		GetEntries,
 	},
-	Route{
-		"Get Entry",
-		"GET",
-		"/api/inventory/{sku}",
-		GetEntry,
-	},
-	Route{
-		"Create Entry",
-		"POST",
-		"/api/inventory/{sku}",
-		CreateEntry,
-	},
-	Route{
-		"Delete Entry",
-		"DELETE",
-		"/api/inventory/{sku}",
-		DeleteEntry,
-	},
+	//Route{
+	//	"Get Entry",
+	//	"GET",
+	//	"/api/inventory/{sku}",
+	//	controller.GetEntry,
+	//},
+	//	Route{
+	//		"Create Entry",
+	//		"POST",
+	//		"/api/inventory/{sku}",
+	//		CreateEntry,
+	//	},
+	//	Route{
+	//		"Delete Entry",
+	//		"DELETE",
+	//		"/api/inventory/{sku}",
+	//		DeleteEntry,
+	//	},
 	Route{
 		"Index",
 		"GET",
