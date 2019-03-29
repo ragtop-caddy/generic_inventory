@@ -20,12 +20,12 @@ var routes = Routes{
 		"/api/inventory",
 		GetEntries,
 	},
-	//Route{
-	//	"Get Entry",
-	//	"GET",
-	//	"/api/inventory/{sku}",
-	//	controller.GetEntry,
-	//},
+	Route{
+		"Get Entry",
+		"GET",
+		"/api/inventory/{sku}",
+		GetEntry,
+	},
 	//	Route{
 	//		"Create Entry",
 	//		"POST",

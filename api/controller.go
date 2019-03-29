@@ -42,19 +42,26 @@ func GetEntries(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEntry - Return a json object containing one person
-//func (c *Controller) GetEntry(w http.ResponseWriter, r *http.Request) {
-//	var params = mux.Vars(r)
-//	result := c.Repository.GetDBEntry(params["sku"])
-//	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-//	w.WriteHeader(http.StatusOK)
-//	if err := json.NewEncoder(w).Encode(result); err != nil {
-//		panic(err)
-//	}
-//
-//}
+func GetEntry(w http.ResponseWriter, r *http.Request) {
+	var params = mux.Vars(r)
+	var result Entry
+	filter := bson.M{"sku": params["sku"]}
+	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+	defer close()
+	err := InventoryDB.Collection("entries").FindOne(ctx, filter).Decode(&result)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		panic(err)
+	}
+}
 
 // CreateEntry - Create a json object containing one person
-//func CreateEntry(w http.ResponseWriter, r *http.Request) {
+// func CreateEntry(w http.ResponseWriter, r *http.Request) {
 //	var entry Entry
 //	params := mux.Vars(r)
 //	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
