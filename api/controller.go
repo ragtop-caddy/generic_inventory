@@ -6,6 +6,7 @@ import (
 	"generic_inventory/web"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,15 +14,9 @@ import (
 
 // GetEntries - Return a json object containing people
 func GetEntries(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	db, err := configDB(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer cancel()
-
-	c, err := db.Collection("entries").Find(ctx, bson.D{})
+	ctx, close := context.WithTimeout(context.Background(), 30*time.Second)
+	defer close()
+	c, err := InventoryDB.Collection("entries").Find(ctx, bson.D{})
 	if err != nil {
 		panic(err)
 	}
