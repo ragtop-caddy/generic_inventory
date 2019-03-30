@@ -50,13 +50,16 @@ func GetEntry(w http.ResponseWriter, r *http.Request) {
 	defer close()
 	err := InventoryDB.Collection("entries").FindOne(ctx, filter).Decode(&result)
 	if err != nil {
-		log.Fatal(err)
-	}
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(404) // Not Found
+	} else {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			w.WriteHeader(500)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		panic(err)
 	}
 }
 
