@@ -95,8 +95,6 @@ func CreateEntry(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteEntry - Delete an entry
-//func (coll *Collection) DeleteOne(ctx context.Context, filter interface{},
-//    opts ...*options.DeleteOptions) (*DeleteResult, error)
 func DeleteEntry(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	params := mux.Vars(r)
