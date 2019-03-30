@@ -128,19 +128,19 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 func GetCSS(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	w.Header().Set("Content-Type", "text/css")
-	http.ServeFile(w, r, "./css/"+params["cssfile"])
+	http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/css/"+params["cssfile"])
 }
 
 // GetJS - Return Javascript Files from the Filesystem
 func GetJS(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	w.Header().Set("Content-Type", "application/javascript")
-	http.ServeFile(w, r, "./js/"+params["jsfile"])
+	http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/js/"+params["jsfile"])
 }
 
 // GetIMG - Return Image Files from the Filesystem
 func GetIMG(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	w.Header().Set("Content-Type", "image/png")
-	http.ServeFile(w, r, "./img/"+params["imgfile"])
+	http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/img/"+params["imgfile"])
 }
