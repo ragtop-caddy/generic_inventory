@@ -12,6 +12,7 @@ type Transaction struct {
 // Header - Information standard to all entries
 type Header struct {
 	Type        string        `bson:"type,omitempty" json:"type,omitempty"`
+	Category    string        `bson:"category,omitempty" json:"category,omitempty"`
 	Description string        `bson:"description,omitempty" json:"description,omitempty"`
 	Stock       int           `bson:"stock,omitempty" json:"stock,omitempty"`
 	History     []Transaction `bson:"history,omitempty" json:"history,omitempty"`
