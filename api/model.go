@@ -32,5 +32,3 @@ type Entry struct {
 	Header  *Header `bson:"header,omitempty" json:"header,omitempty"`
 	Details *Detail `bson:"details,omitempty" json:"details,omitempty"`
 }
-
-var entries []Entry

@@ -26,18 +26,18 @@ var routes = Routes{
 		"/api/inventory/{sku}",
 		GetEntry,
 	},
-	//	Route{
-	//		"Create Entry",
-	//		"POST",
-	//		"/api/inventory/{sku}",
-	//		CreateEntry,
-	//	},
-	//	Route{
-	//		"Delete Entry",
-	//		"DELETE",
-	//		"/api/inventory/{sku}",
-	//		DeleteEntry,
-	//	},
+	Route{
+		"Create Entry",
+		"POST",
+		"/api/inventory/{sku}",
+		CreateEntry,
+	},
+	Route{
+		"Delete Entry",
+		"DELETE",
+		"/api/inventory/{sku}",
+		DeleteEntry,
+	},
 	Route{
 		"Index",
 		"GET",
