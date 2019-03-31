@@ -2,6 +2,7 @@ package api
 
 // Transaction - Standard transaction structure
 type Transaction struct {
+	Tid      string `bson:"tid,omitempty" json:"tid,omitempty"`
 	ISODate  string `bson:"isodate,omitempty" json:"isodate,omitempty"`
 	Campus   string `bson:"campus,omitempty" json:"campus,omitempty"`
 	Students int    `bson:"students,omitempty" json:"students,omitempty"`
