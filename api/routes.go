@@ -15,28 +15,22 @@ type Routes []Route
 
 var routes = Routes{
 	Route{
-		"All Entries",
-		"GET",
-		"/api/inventory",
-		GetEntries,
-	},
-	Route{
 		"Get Entry",
 		"GET",
-		"/api/inventory/{sku}",
-		GetEntry,
+		"/api/inventory/{action}/{sku}",
+		CrudHandle,
 	},
 	Route{
 		"Create Entry",
 		"POST",
-		"/api/inventory/{sku}",
-		CreateEntry,
+		"/api/inventory/{action}/{sku}",
+		CrudHandle,
 	},
 	Route{
 		"Delete Entry",
 		"DELETE",
-		"/api/inventory/{sku}",
-		DeleteEntry,
+		"/api/inventory/{action}/{sku}",
+		CrudHandle,
 	},
 	Route{
 		"Index",
