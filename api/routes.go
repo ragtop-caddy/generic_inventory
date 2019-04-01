@@ -39,21 +39,9 @@ var routes = Routes{
 		GetIndex,
 	},
 	Route{
-		"Stylesheet File",
+		"Index",
 		"GET",
-		"/css/{cssfile}",
-		GetCSS,
-	},
-	Route{
-		"Javascript File",
-		"GET",
-		"/js/{jsfile}",
-		GetJS,
-	},
-	Route{
-		"Image File",
-		"GET",
-		"/img/{imgfile}",
-		GetIMG,
+		"/{path}/{file}.{ext}",
+		StaticHandle,
 	},
 }

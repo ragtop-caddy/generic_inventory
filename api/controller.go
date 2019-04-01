@@ -68,31 +68,30 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// StaticHandle - Function to return static web components
+func StaticHandle(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	switch params["path"] {
+	case "css":
+		w.Header().Set("Content-Type", "text/css")
+		http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/"+params["path"]+"/"+params["file"]+"."+params["ext"])
+	case "js":
+		w.Header().Set("Content-Type", "application/javascript")
+		http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/"+params["path"]+"/"+params["file"]+"."+params["ext"])
+	case "img":
+		w.Header().Set("Content-Type", "image/"+params["ext"])
+		http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/"+params["path"]+"/"+params["file"]+"."+params["ext"])
+	default:
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(404)
+	}
+
+}
+
 // GetIndex - Return the main HTML page for the site
 func GetIndex(w http.ResponseWriter, r *http.Request) {
 	p := &web.Page{Title: "Hello", Body: []byte("This is a sample Page.")}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	web.RenderTemplate(w, "view", p)
-}
-
-// GetCSS - Return CSS Files from the Filesystem
-func GetCSS(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	w.Header().Set("Content-Type", "text/css")
-	http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/css/"+params["cssfile"])
-}
-
-// GetJS - Return Javascript Files from the Filesystem
-func GetJS(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	w.Header().Set("Content-Type", "application/javascript")
-	http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/js/"+params["jsfile"])
-}
-
-// GetIMG - Return Image Files from the Filesystem
-func GetIMG(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	w.Header().Set("Content-Type", "image/png")
-	http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/img/"+params["imgfile"])
 }
