@@ -1,8 +1,8 @@
 package web
 
 import (
-	"html/template"
 	"net/http"
+	"text/template"
 )
 
 // RenderTemplate - Function to render standard templates
