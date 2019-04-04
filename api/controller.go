@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"generic_inventory/dao"
 	"generic_inventory/web"
 	"net/http"
 
@@ -16,7 +17,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 	switch params["action"] {
 	case "show":
 		if params["sku"] == "all" {
-			results, err := GetEntries()
+			results, err := dao.GetEntries()
 			if err != nil {
 				w.WriteHeader(404) // Not Found
 			}
@@ -24,7 +25,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(500) // Internal error
 			}
 		} else {
-			result, err := GetEntry(params["sku"])
+			result, err := dao.GetEntry(params["sku"])
 			if err != nil {
 				w.WriteHeader(404) // Not Found
 			} else {
@@ -34,7 +35,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "add":
-		id, err := CreateEntry(r.Body, params["sku"])
+		id, err := dao.CreateEntry(r.Body, params["sku"])
 		if err != nil {
 			w.WriteHeader(500) // Internal error
 			if err := json.NewEncoder(w).Encode(err); err != nil {
@@ -47,7 +48,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "remove":
-		count, err := DeleteEntry(params["sku"])
+		count, err := dao.DeleteEntry(params["sku"])
 		if err != nil {
 			w.WriteHeader(500) // Internal error
 			if err := json.NewEncoder(w).Encode(err); err != nil {

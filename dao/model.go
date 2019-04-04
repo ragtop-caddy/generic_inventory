@@ -1,4 +1,4 @@
-package api
+package dao
 
 // Transaction - Standard transaction structure
 type Transaction struct {
