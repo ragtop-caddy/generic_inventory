@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"encoding/json"
+	"generic_inventory/conf"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,21 +15,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// InventoryDAO - Type to hold a couple of parameters needed to set up a DB connection
-type InventoryDAO struct {
-	URI string
-}
-
-// InventoryDB - exported db client
-var InventoryDB *mongo.Database
-
 // ConfigDB - Function to set up a DB client
-func (d *InventoryDAO) ConfigDB() {
+func ConfigDB(conf *conf.ServerConf) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(d.URI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+conf.DBHost+":"+conf.DBPort))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,14 +34,14 @@ func (d *InventoryDAO) ConfigDB() {
 		log.Fatal(err)
 	}
 
-	InventoryDB = client.Database("inventory")
+	conf.DBClient = client.Database(conf.DBName)
 }
 
 // GetEntries - Return a json object containing people
-func GetEntries() (results []Entry, err error) {
+func GetEntries(conf conf.ServerConf) (results []Entry, err error) {
 	ctx, close := context.WithTimeout(context.Background(), 30*time.Second)
 	defer close()
-	c, err := InventoryDB.Collection("entries").Find(ctx, bson.D{})
+	c, err := conf.DBClient.Collection("entries").Find(ctx, bson.D{})
 	defer c.Close(ctx)
 
 	for c.Next(ctx) {
@@ -61,32 +54,32 @@ func GetEntries() (results []Entry, err error) {
 }
 
 // GetEntry - Return a json object containing one person
-func GetEntry(sku string) (result Entry, err error) {
+func GetEntry(sku string, conf conf.ServerConf) (result Entry, err error) {
 	filter := bson.M{"sku": sku}
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
 	defer close()
-	err = InventoryDB.Collection("entries").FindOne(ctx, filter).Decode(&result)
+	err = conf.DBClient.Collection("entries").FindOne(ctx, filter).Decode(&result)
 	return
 }
 
 // CreateEntry - Create a json object containing one person
-func CreateEntry(reqbody io.ReadCloser, sku string) (res *mongo.InsertOneResult, err error) {
+func CreateEntry(reqbody io.ReadCloser, sku string, conf conf.ServerConf) (res *mongo.InsertOneResult, err error) {
 	var entry Entry
 	entry.SKU = sku
 	body, err := ioutil.ReadAll(io.LimitReader(reqbody, 1048576))
 	err = json.Unmarshal(body, &entry)
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
 	defer close()
-	res, err = InventoryDB.Collection("entries").InsertOne(ctx, entry)
+	res, err = conf.DBClient.Collection("entries").InsertOne(ctx, entry)
 	return
 }
 
 // DeleteEntry - Delete an entry
-func DeleteEntry(sku string) (count int64, err error) {
+func DeleteEntry(sku string, conf conf.ServerConf) (count int64, err error) {
 	filter := bson.M{"sku": sku}
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
 	defer close()
-	res, err := InventoryDB.Collection("entries").DeleteOne(ctx, filter)
+	res, err := conf.DBClient.Collection("entries").DeleteOne(ctx, filter)
 	count = res.DeletedCount
 	return
 }

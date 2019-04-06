@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"generic_inventory/conf"
 	"generic_inventory/dao"
 	"generic_inventory/web"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -17,7 +19,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 	switch params["action"] {
 	case "show":
 		if params["sku"] == "all" {
-			results, err := dao.GetEntries()
+			results, err := dao.GetEntries(conf.MyConfig)
 			if err != nil {
 				w.WriteHeader(404) // Not Found
 			}
@@ -25,7 +27,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(500) // Internal error
 			}
 		} else {
-			result, err := dao.GetEntry(params["sku"])
+			result, err := dao.GetEntry(params["sku"], conf.MyConfig)
 			if err != nil {
 				w.WriteHeader(404) // Not Found
 			} else {
@@ -35,7 +37,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "add":
-		id, err := dao.CreateEntry(r.Body, params["sku"])
+		id, err := dao.CreateEntry(r.Body, params["sku"], conf.MyConfig)
 		if err != nil {
 			w.WriteHeader(500) // Internal error
 			if err := json.NewEncoder(w).Encode(err); err != nil {
@@ -48,7 +50,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "remove":
-		count, err := dao.DeleteEntry(params["sku"])
+		count, err := dao.DeleteEntry(params["sku"], conf.MyConfig)
 		if err != nil {
 			w.WriteHeader(500) // Internal error
 			if err := json.NewEncoder(w).Encode(err); err != nil {
@@ -75,13 +77,13 @@ func StaticHandle(w http.ResponseWriter, r *http.Request) {
 	switch params["path"] {
 	case "css":
 		w.Header().Set("Content-Type", "text/css")
-		http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/"+params["path"]+"/"+params["file"]+"."+params["ext"])
+		http.ServeFile(w, r, conf.MyConfig.StaticPath+params["path"]+"/"+params["file"]+"."+params["ext"])
 	case "js":
 		w.Header().Set("Content-Type", "application/javascript")
-		http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/"+params["path"]+"/"+params["file"]+"."+params["ext"])
+		http.ServeFile(w, r, conf.MyConfig.StaticPath+params["path"]+"/"+params["file"]+"."+params["ext"])
 	case "img":
 		w.Header().Set("Content-Type", "image/"+params["ext"])
-		http.ServeFile(w, r, "C:/Users/dusti/go/src/generic_inventory/web/static/"+params["path"]+"/"+params["file"]+"."+params["ext"])
+		http.ServeFile(w, r, conf.MyConfig.StaticPath+params["path"]+"/"+params["file"]+"."+params["ext"])
 	default:
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(404)
@@ -94,5 +96,19 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	p := &web.Page{Title: "Hello", Body: []byte("This is a sample Page.")}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	web.RenderTemplate(w, "view", p)
+	web.RenderTemplate(w, "index.html", p, conf.MyConfig.TmplPath)
+}
+
+// RedirectToTLS - Handler for HTTp to HTTPS Redirection
+func RedirectToTLS(w http.ResponseWriter, req *http.Request) {
+	// remove/add not default ports from req.Host
+	target := "https://" + req.Host + req.URL.Path
+
+	if len(req.URL.RawQuery) > 0 {
+		target += "?" + req.URL.RawQuery
+	}
+	log.Printf("redirect to: %s", target)
+	http.Redirect(w, req, target,
+		// see @andreiavrammsd comment: often 307 > 301
+		http.StatusTemporaryRedirect)
 }
