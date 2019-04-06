@@ -15,6 +15,7 @@ import (
 func CrudHandle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 
 	switch params["action"] {
 	case "show":
@@ -73,6 +74,7 @@ func CrudHandle(w http.ResponseWriter, r *http.Request) {
 
 // StaticHandle - Function to return static web components
 func StaticHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	params := mux.Vars(r)
 	switch params["path"] {
 	case "css":
@@ -95,6 +97,7 @@ func StaticHandle(w http.ResponseWriter, r *http.Request) {
 func GetIndex(w http.ResponseWriter, r *http.Request) {
 	p := &web.Page{Title: "Hello", Body: []byte("This is a sample Page.")}
 	w.Header().Set("Content-Type", "text/html")
+	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	w.WriteHeader(http.StatusOK)
 	web.RenderTemplate(w, "index.html", p, conf.MyConfig.TmplPath)
 }
