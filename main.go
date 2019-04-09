@@ -11,14 +11,7 @@ import (
 // main - our main function
 func main() {
 	var c = &conf.MyConfig
-	c.DBHost = "localhost"
-	c.DBPort = "27017"
-	c.DBName = "inventory"
-	c.TLSCert = "F:/Docker/generic_inventory/ssl/cert.pem"
-	c.TLSKey = "F:/Docker/generic_inventory/ssl/key.pem"
-	c.StaticPath = "F:/Docker/generic_inventory/static/"
-	c.TmplPath = "F:/Docker/generic_inventory/templates/"
-	c.Addr = ":443"
+	c.ParseConfig()
 	c.Router = api.NewRouter()
 
 	// Configure DB Connection
