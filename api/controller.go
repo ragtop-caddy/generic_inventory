@@ -95,11 +95,11 @@ func StaticHandle(w http.ResponseWriter, r *http.Request) {
 
 // GetIndex - Return the main HTML page for the site
 func GetIndex(w http.ResponseWriter, r *http.Request) {
-	p := &web.Page{Title: "Hello", Body: []byte("This is a sample Page.")}
+	var tmpl = "index.html"
+	p := &web.Page{Title: "Welcome To Generic Inventory", Body: []byte("This is a sample Page.")}
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	w.WriteHeader(http.StatusOK)
-	web.RenderTemplate(w, "index.html", p, conf.MyConfig.TmplPath)
+	web.RenderTemplate(w, tmpl, p, conf.MyConfig.TmplPath)
 }
 
 // RedirectToTLS - Handler for HTTp to HTTPS Redirection

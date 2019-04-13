@@ -1,6 +1,9 @@
 package api
 
-import "net/http"
+import (
+	"generic_inventory/auth"
+	"net/http"
+)
 
 // Complex YAML for route/router config
 //type Service struct {
@@ -42,6 +45,24 @@ type Route struct {
 type Routes []Route
 
 var routes = Routes{
+	Route{
+		"Login",
+		"POST",
+		"/login",
+		auth.Login,
+	},
+	Route{
+		"Logout",
+		"GET",
+		"/logout",
+		auth.Logout,
+	},
+	Route{
+		"Forbidden",
+		"GET",
+		"/forbidden",
+		auth.Forbidden,
+	},
 	Route{
 		"Get Entry",
 		"GET",

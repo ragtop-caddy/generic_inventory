@@ -1,6 +1,7 @@
 package api
 
 import (
+	"generic_inventory/auth"
 	"generic_inventory/logger"
 	"net/http"
 
@@ -14,6 +15,7 @@ func NewRouter() *mux.Router {
 		var handler http.Handler
 		handler = route.HandlerFunc
 		handler = logger.Logger(handler, route.Name)
+		handler = auth.ValidateSession(handler, route.Name)
 
 		router.
 			Methods(route.Method).
