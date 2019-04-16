@@ -17,13 +17,13 @@ import (
 
 // ConfigDB - Function to set up a DB client
 func ConfigDB(conf *conf.ServerConf) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+conf.DBHost+":"+conf.DBPort))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+conf.DBHost+":"+conf.DBPort).SetTLSConfig(conf.ClientTLS))
+	err = client.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Got Error %s on initial connection", err)
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)

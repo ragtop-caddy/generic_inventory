@@ -1,14 +1,35 @@
 package auth
 
-// InternalCredentials - Struct to hold user credentials
-type InternalCredentials struct {
-	username string
+import "net/http"
+
+type internalUser struct {
+	name     string
 	password string
 }
 
-func (ic InternalCredentials) CheckPass() bool {
-	if ic.password == "code" {
-		return true
+// InternalUsers - struct containing a list of internal users
+type InternalUsers []internalUser
+
+// NewInternalAuth - Create a new internal auth mechanism
+func NewInternalAuth() InternalUsers {
+	var u = InternalUsers{
+		internalUser{name: "joe", password: "code"},
+		internalUser{name: "bill", password: "foo"},
 	}
-	return false
+	return u
+}
+
+// CheckPass - Check password validity
+func (iu InternalUsers) CheckPass(r *http.Request) User {
+	var u User
+	u.Username = r.FormValue("username")
+	u.Authenticated = false
+	for _, user := range iu {
+		if user.name == u.Username {
+			if r.FormValue("code") == user.password {
+				u.Authenticated = true
+			}
+		}
+	}
+	return u
 }

@@ -62,27 +62,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Where authentication could be done
-	//if r.FormValue("code") != "code" {
-	//	if r.FormValue("code") == "" {
-	//		session.AddFlash("Must enter a code")
-	//	}
-	//	session.AddFlash("The code was incorrect")
-	//	err = session.Save(r, w)
-	//	if err != nil {
-	//		http.Error(w, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	http.Redirect(w, r, "/forbidden", http.StatusFound)
-	//	return
-	//}
-	user := User{Username: r.FormValue("username"), Authenticated: false}
-	user.Authenticated = InternalCredentials{username: r.FormValue("username"), password: r.FormValue("code")}.CheckPass()
-	//user := &User{
-	//	Username:      username,
-	//	Authenticated: false,
-	//}
-
+	user := sessionAuth.CheckPass(r)
 	session.Values["user"] = user
 
 	err = session.Save(r, w)

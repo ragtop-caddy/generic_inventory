@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/gob"
+	"net/http"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -11,19 +12,14 @@ import (
 type User struct {
 	Username      string
 	Authenticated bool
-	password      string
 }
 
 // Authenticator - An interface to allow interoperability with external authentication providers
 type Authenticator interface {
-	CheckPass() bool
+	CheckPass(r *http.Request) *User
 }
 
-// Authenticate -
-func Authenticate(a Authenticator) bool {
-	ok := a.CheckPass()
-	return ok
-}
+var sessionAuth = NewInternalAuth()
 
 // Store - holds all session data
 var Store *sessions.CookieStore

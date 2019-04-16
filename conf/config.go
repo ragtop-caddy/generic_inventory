@@ -2,7 +2,9 @@ package conf
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
@@ -26,6 +28,7 @@ type ServerConf struct {
 	DBHost     string `yaml:"dbhost,omitempty"`
 	DBPort     string `yaml:"dbport,omitempty"`
 	DBName     string `yaml:"dbname,omitempty"`
+	ClientTLS  *tls.Config
 }
 
 // MyConfig - Exported variable to hold server configuration data. Is initialized with defaults.
@@ -51,6 +54,31 @@ func (conf *ServerConf) ParseConfig() {
 	err = yaml.Unmarshal(yamlFile, &conf)
 	if err != nil {
 		panic(err)
+	}
+}
+
+// ConfigureClientTLS - Configure TLS settings for client connection
+func (conf *ServerConf) ConfigureClientTLS() {
+	rootCA := x509.NewCertPool()
+	capem, _ := ioutil.ReadFile(conf.TLSCert)
+	rootCA.AppendCertsFromPEM(capem)
+	clientCert, err := tls.LoadX509KeyPair(conf.TLSCert, conf.TLSKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conf.ClientTLS = &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		RootCAs:      rootCA,
+		Certificates: []tls.Certificate{clientCert},
 	}
 }
 
