@@ -15,8 +15,8 @@ func main() {
 	c.Router = api.NewRouter()
 
 	// Configure Server using TLS
-	c.ConfigureClientTLS()
 	c.ConfigureTLS()
+	c.ConfigureClientTLS()
 	c.ConfigServer()
 
 	// Configure DB Connection
@@ -26,5 +26,5 @@ func main() {
 	go http.ListenAndServe(":80", http.HandlerFunc(api.RedirectToTLS))
 
 	// Startup TLS Listener
-	log.Fatal(conf.MyConfig.SrvConf.ListenAndServeTLS(c.TLSCert, c.TLSKey))
+	log.Fatalf("Got %s Starting the HTTPS Listener", conf.MyConfig.SrvConf.ListenAndServeTLS(c.TLSCert, c.TLSKey))
 }

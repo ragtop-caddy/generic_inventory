@@ -12,14 +12,24 @@ import (
 type User struct {
 	Username      string
 	Authenticated bool
+	Role          string
 }
 
 // Authenticator - An interface to allow interoperability with external authentication providers
 type Authenticator interface {
-	CheckPass(r *http.Request) *User
+	Authenticate(r *http.Request) *User
 }
 
-var sessionAuth = NewInternalAuth()
+// Manager - An interface to allow user management tasks via additional providers
+type Manager interface {
+	ShowUser(r *http.Request)
+	CreateUser(r *http.Request)
+	DeleteUser(r *http.Request)
+	UpdateUser(r *http.Request)
+}
+
+// SessionAuth - Object to interact with the internal auth module
+var SessionAuth InternalAuth
 
 // Store - holds all session data
 var Store *sessions.CookieStore

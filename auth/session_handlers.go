@@ -62,7 +62,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := sessionAuth.CheckPass(r)
+	user := SessionAuth.Authenticate(r.FormValue("username"), r.FormValue("code"))
 	session.Values["user"] = user
 
 	err = session.Save(r, w)

@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"encoding/json"
+	"generic_inventory/auth"
 	"generic_inventory/conf"
 	"io"
 	"io/ioutil"
@@ -17,24 +18,32 @@ import (
 
 // ConfigDB - Function to set up a DB client
 func ConfigDB(conf *conf.ServerConf) {
+	sslClient, err := mongo.NewClient(options.Client().ApplyURI("mongodb://" + conf.DBHost + ":" + conf.DBPort).SetTLSConfig(conf.ClientTLS))
+	if err != nil {
+		log.Fatalf("Got MongoDB Driver Error %s configuring sslClient", err)
+	}
+	conf.MongoClient = sslClient
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+conf.DBHost+":"+conf.DBPort).SetTLSConfig(conf.ClientTLS))
-	err = client.Connect(ctx)
+	//sslClient, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+conf.DBHost+":"+conf.DBPort).SetTLSConfig(conf.ClientTLS))
+	err = sslClient.Connect(ctx)
 	if err != nil {
-		log.Printf("Got Error %s on initial connection", err)
+		log.Fatalf("Got MongoDB Driver Error %s on initial connection", err)
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err = client.Ping(ctx, readpref.Primary())
+	err = sslClient.Ping(ctx, readpref.Primary())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Got MongoDB Driver %s during connection test", err)
 	}
 
-	conf.DBClient = client.Database(conf.DBName)
+	conf.DBClient = sslClient.Database(conf.DBName)
+	auth.SessionAuth.Client = conf.DBClient
+	auth.SessionAuth.GenDefaultUser()
 }
 
 // GetEntries - Return a json object containing people

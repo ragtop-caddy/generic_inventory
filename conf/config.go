@@ -15,37 +15,44 @@ import (
 
 // ServerConf - Object to hold server configuration values
 type ServerConf struct {
-	ConfigFile string
-	Router     *mux.Router
-	TLSConf    *tls.Config
-	SrvConf    *http.Server
-	DBClient   *mongo.Database
-	Addr       string `yaml:"ssl_addr,omitempty"`
-	TLSCert    string `yaml:"cert,omitempty"`
-	TLSKey     string `yaml:"key,omitempty"`
-	StaticPath string `yaml:"static_path,omitempty"`
-	TmplPath   string `yaml:"template_path,omitempty"`
-	DBHost     string `yaml:"dbhost,omitempty"`
-	DBPort     string `yaml:"dbport,omitempty"`
-	DBName     string `yaml:"dbname,omitempty"`
-	ClientTLS  *tls.Config
+	ConfigFile    string
+	Router        *mux.Router
+	TLSConf       *tls.Config
+	SrvConf       *http.Server
+	MongoClient   *mongo.Client
+	DBClient      *mongo.Database
+	Addr          string `yaml:"ssl_addr,omitempty"`
+	TLSCert       string `yaml:"cert,omitempty"`
+	TLSKey        string `yaml:"key,omitempty"`
+	RootCAs       string `yaml:"root_ca_bundle,omitempty"`
+	StaticPath    string `yaml:"static_path,omitempty"`
+	TmplPath      string `yaml:"template_path,omitempty"`
+	DBHost        string `yaml:"dbhost,omitempty"`
+	DBPort        string `yaml:"dbport,omitempty"`
+	DBName        string `yaml:"dbname,omitempty"`
+	ClientTLScert string `yaml:"ssl_client_cert,omitempty"`
+	ClientTLSkey  string `yaml:"ssl_client_key,omitempty"`
+	ClientTLS     *tls.Config
 }
 
-// MyConfig - Exported variable to hold server configuration data. Is initialized with defaults.
-var MyConfig ServerConf
+// MyConfig - Exported variable initialized with default configuration data.
+var MyConfig = ServerConf{
+	ConfigFile:    "/etc/generic_inventory/config.yaml",
+	Addr:          ":443",
+	RootCAs:       "/etc/pki/tls/cert.pem",
+	TLSCert:       "/etc/generic_inventory/ssl/cert.pem",
+	TLSKey:        "/etc/generic_inventory/ssl/key.pem",
+	StaticPath:    "/etc/generic_inventory/static/",
+	TmplPath:      "/etc/generic_inventory/templates/",
+	DBHost:        "localhost",
+	DBPort:        "27017",
+	DBName:        "inventory",
+	ClientTLScert: "/etc/generic_inventory/ssl/client_cert.pem",
+	ClientTLSkey:  "/etc/generic_inventory/ssl/client_key.pem",
+}
 
 // ParseConfig - Function to parse the configuration file
 func (conf *ServerConf) ParseConfig() {
-	conf.ConfigFile = "/etc/generic_inventory/config.yaml"
-	conf.Addr = ":443"
-	conf.TLSCert = "/etc/generic_inventory/ssl/cert.pem"
-	conf.TLSKey = "/etc/generic_inventory/ssl/key.pem"
-	conf.StaticPath = "/etc/generic_inventory/static/"
-	conf.TmplPath = "/etc/generic_inventory/templates/"
-	conf.DBHost = "localhost"
-	conf.DBPort = "27017"
-	conf.DBName = "inventory"
-
 	file, ok := os.LookupEnv("INV_CONF_FILE")
 	if !ok {
 		file = conf.ConfigFile
@@ -53,18 +60,21 @@ func (conf *ServerConf) ParseConfig() {
 	yamlFile, err := ioutil.ReadFile(file)
 	err = yaml.Unmarshal(yamlFile, &conf)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Got %s Opening Configuration file", err)
 	}
 }
 
 // ConfigureClientTLS - Configure TLS settings for client connection
 func (conf *ServerConf) ConfigureClientTLS() {
 	rootCA := x509.NewCertPool()
-	capem, _ := ioutil.ReadFile(conf.TLSCert)
-	rootCA.AppendCertsFromPEM(capem)
-	clientCert, err := tls.LoadX509KeyPair(conf.TLSCert, conf.TLSKey)
+	capem, err := ioutil.ReadFile(conf.RootCAs)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Got %s opening RootCA Bundle %s", conf.RootCAs, err)
+	}
+	rootCA.AppendCertsFromPEM(capem)
+	clientCert, err := tls.LoadX509KeyPair(conf.ClientTLScert, conf.ClientTLSkey)
+	if err != nil {
+		log.Fatalf("Got %s loading certificate %s", conf.ClientTLScert, err)
 	}
 
 	conf.ClientTLS = &tls.Config{

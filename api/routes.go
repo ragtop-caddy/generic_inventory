@@ -46,6 +46,12 @@ type Routes []Route
 
 var routes = Routes{
 	Route{
+		"Admin",
+		"GET",
+		"/admin",
+		auth.AdminPanel,
+	},
+	Route{
 		"Login",
 		"POST",
 		"/login",
