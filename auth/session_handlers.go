@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -27,7 +26,6 @@ func ValidateSession(inner http.Handler, name string) http.Handler {
 		session, err := Store.Get(r, "cookie-name")
 		if session.IsNew {
 			if err != nil {
-				fmt.Printf("INFO: Found bogus cookie\n")
 				session.Options.MaxAge = -1
 				err = session.Save(r, w)
 				if err != nil {
