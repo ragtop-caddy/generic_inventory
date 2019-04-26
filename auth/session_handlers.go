@@ -2,8 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"generic_inventory/conf"
-	"generic_inventory/web"
 	"net/http"
 	"strings"
 )
@@ -36,12 +34,6 @@ func ValidateSession(inner http.Handler, name string) http.Handler {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				//} else {
-				//	fmt.Printf("INFO: New user session, saving cookie\n")
-				//	//err = session.Save(r, w)
-				//	if err != nil {
-				//		http.Error(w, err.Error(), http.StatusInternalServerError)
-				//	}
 			}
 		}
 		user := GetUser(session)
@@ -59,15 +51,6 @@ func ValidateSession(inner http.Handler, name string) http.Handler {
 		}
 		inner.ServeHTTP(w, r)
 	})
-}
-
-// Forbidden - http Handler to render the login page
-func Forbidden(w http.ResponseWriter, r *http.Request) {
-	var tmpl = "login.html"
-	p := &web.Page{Title: "Log in required", Body: []byte("This is a sample Page.")}
-	w.Header().Set("Content-Type", "text/html")
-	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	web.RenderTemplate(w, tmpl, p, conf.MyConfig.TmplPath)
 }
 
 // Login - authenticates the user

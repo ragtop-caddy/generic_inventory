@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"generic_inventory/auth"
 	"generic_inventory/conf"
 	"generic_inventory/dao"
@@ -107,11 +106,6 @@ func GetIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := auth.GetUser(session)
-	var permitted = "False"
-	if user.Authenticated {
-		permitted = "True"
-	}
-	fmt.Printf("%s %s %s \n", user.Username, user.Role, permitted)
 	if user.Authenticated {
 		tmpl = "index.html"
 		p = &web.Page{Title: "Welcome To Generic Inventory", Body: []byte("This is a sample Page.")}

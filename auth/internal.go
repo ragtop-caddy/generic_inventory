@@ -90,17 +90,14 @@ func (ia InternalAuth) GenDefaultUser() {
 
 // Authenticate - Check password validity
 func (ia InternalAuth) Authenticate(uid, pass string) (u User) {
-	fmt.Printf("INFO: Authenticating %s with password %s \n", uid, pass)
 	u.Username = uid
 	u.Authenticated = false
 	creds, err := ia.retrieveUser(uid)
 	if err != nil {
 		log.Printf("ERROR: %s while retrieving user credentials", err)
 	}
-	fmt.Printf("INFO: Got user %s with hash %s \n", creds.UID, creds.Hash)
 	if CheckPasswordHash(pass, creds.Hash) {
 		u.Authenticated = true
-		fmt.Printf("INFO: User %s successfully authenticated as %s \n", u.Username, creds.Role)
 	}
 	u.Role = creds.Role
 	return u

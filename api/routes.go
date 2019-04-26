@@ -64,12 +64,6 @@ var routes = Routes{
 		auth.Logout,
 	},
 	Route{
-		"Forbidden",
-		"GET",
-		"/forbidden",
-		auth.Forbidden,
-	},
-	Route{
 		"Get Entry",
 		"GET",
 		"/api/inventory/{action}/{sku}",

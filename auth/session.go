@@ -2,7 +2,6 @@ package auth
 
 import (
 	"encoding/gob"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/securecookie"
@@ -57,7 +56,6 @@ func init() {
 // on error returns an empty user
 func GetUser(s *sessions.Session) User {
 	val := s.Values["user"]
-	fmt.Printf("INFO: User cookie values %s \n", val)
 	var user = User{}
 	user, ok := val.(User)
 	if !ok {
