@@ -65,7 +65,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	user := SessionAuth.Authenticate(r.FormValue("username"), r.FormValue("code"))
 	session.Values["user"] = user
-	fmt.Printf("INFO: Login got %s, saving cookie \n", session.Values["user"])
 	err = session.Save(r, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
