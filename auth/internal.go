@@ -7,11 +7,9 @@ import (
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,17 +20,20 @@ type InternalAuth struct {
 
 // internalUser - Internally managed user
 type credentials struct {
-	UID        string `json:"uid,omitempty" bson:"uid,omitempty"`
-	Fname      string `json:"fname,omitempty" bson:"fname,omitempty"`
-	Lname      string `json:"lname,omitempty" bson:"lname,omitempty"`
-	Email      string `json:"email,omitempty" bson:"email,omitempty"`
-	Hash       string `json:"hash,omitempty" bson:"hash,omitempty"`
-	Role       string `json:"role,omitempty" bson:"role,omitempty"`
-	State      string `json:"state,omitempty" bson:"state,omitempty"`
-	Inactive   int    `json:"inactive,omitempty" bson:"inactive,omitempty"`
-	Expiration int    `json:"expiration,omitempty" bson:"expiration,omitempty"`
-	Last       string `json:"last,omitempty" bson:"last,omitempty"`
+	UID        string    `json:"uid,omitempty" bson:"uid,omitempty"`
+	Fname      string    `json:"fname,omitempty" bson:"fname,omitempty"`
+	Lname      string    `json:"lname,omitempty" bson:"lname,omitempty"`
+	Email      string    `json:"email,omitempty" bson:"email,omitempty"`
+	Pass       string    `json:"pass,omitempty" bson:"pass,omitempty"`
+	Hash       string    `json:"hash,omitempty" bson:"hash,omitempty"`
+	Role       string    `json:"role,omitempty" bson:"role,omitempty"`
+	State      string    `json:"state,omitempty" bson:"state,omitempty"`
+	Inactive   int       `json:"inactive,omitempty" bson:"inactive,omitempty"`
+	Expiration int       `json:"expiration,omitempty" bson:"expiration,omitempty"`
+	Last       time.Time `json:"last,omitempty" bson:"last,omitempty"`
 }
+
+type mcredentials []credentials
 
 // HashPassword - Create a hash of the provided password
 func HashPassword(password string) (string, error) {
@@ -74,6 +75,9 @@ func (ia InternalAuth) GenDefaultUser() {
 			"inactive":   60,
 			"expiration": 120,
 		},
+		"$currentDate": bson.M{
+			"last": true,
+		},
 	}
 	upsert := true
 	udopts := &options.UpdateOptions{Upsert: &upsert}
@@ -86,33 +90,90 @@ func (ia InternalAuth) GenDefaultUser() {
 
 // Authenticate - Check password validity
 func (ia InternalAuth) Authenticate(uid, pass string) (u User) {
+	fmt.Printf("INFO: Authenticating %s with password %s \n", uid, pass)
 	u.Username = uid
 	u.Authenticated = false
-	creds, err := retrieveCreds(ia.Client, uid)
+	creds, err := ia.retrieveUser(uid)
 	if err != nil {
 		log.Printf("ERROR: %s while retrieving user credentials", err)
 	}
+	fmt.Printf("INFO: Got user %s with hash %s \n", creds.UID, creds.Hash)
 	if CheckPasswordHash(pass, creds.Hash) {
 		u.Authenticated = true
+		fmt.Printf("INFO: User %s successfully authenticated as %s \n", u.Username, creds.Role)
 	}
 	u.Role = creds.Role
 	return u
 }
 
-func retrieveCreds(client *mongo.Database, uid string) (creds credentials, err error) {
+func (ia InternalAuth) retrieveUser(uid string) (creds credentials, err error) {
 	filter := bson.M{"uid": uid}
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
 	defer close()
-	err = client.Collection("users").FindOne(ctx, filter).Decode(&creds)
+	err = ia.Client.Collection("users").FindOne(ctx, filter).Decode(&creds)
 	return
 }
 
-func storeCreds(creds credentials, client *mongo.Database) (res *mongo.InsertOneResult, err error) {
-	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+func (ia InternalAuth) retrieveUsers() (results mcredentials, err error) {
+	filter := bson.D{}
+	ctx, close := context.WithTimeout(context.Background(), 30*time.Second)
 	defer close()
-	res, err = client.Collection("users").InsertOne(ctx, creds)
+
+	c, err := ia.Client.Collection("users").Find(ctx, filter)
+	defer c.Close(ctx)
+
+	for c.Next(ctx) {
+		var result credentials
+		err = c.Decode(&result)
+		results = append(results, result)
+	}
+	err = c.Err()
 	return
 }
+
+func (ia InternalAuth) createUser(new credentials) (res *mongo.InsertOneResult, err error) {
+	hash, err := HashPassword(new.Pass)
+	if err != nil {
+		log.Printf("ERROR: %s while storing user credentials", err)
+	}
+	newuserDoc := bson.M{
+		"$set": bson.M{
+			"uid":        new.UID,
+			"fname":      new.Fname,
+			"lname":      new.Lname,
+			"email":      new.Email,
+			"hash":       hash,
+			"role":       new.Role,
+			"state":      new.State,
+			"inactive":   new.Inactive,
+			"expiration": new.Expiration,
+		},
+		"$currentDate": bson.M{
+			"last": true,
+		},
+	}
+	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+	defer close()
+	res, err = ia.Client.Collection("users").InsertOne(ctx, newuserDoc)
+	return
+}
+
+// DeleteEntry - Delete an entry
+//func (ia InternalAuth) deleteUser(uid string) (count int64, err error) {
+//	filter := bson.M{"sku": sku}
+//	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+//	defer close()
+//	res, err := ia.Client.Collection("entries").DeleteOne(ctx, filter)
+//	count = res.DeletedCount
+//	return
+//}
+
+//func storeCreds(creds credentials, client *mongo.Database) (res *mongo.InsertOneResult, err error) {
+//	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+//	defer close()
+//	res, err = client.Collection("users").InsertOne(ctx, creds)
+//	return
+//}
 
 //func updateCreds(creds credentials, ) (ok bool, err error) {
 //

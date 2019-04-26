@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"generic_inventory/auth"
 	"generic_inventory/conf"
 	"generic_inventory/dao"
 	"generic_inventory/web"
@@ -95,8 +97,26 @@ func StaticHandle(w http.ResponseWriter, r *http.Request) {
 
 // GetIndex - Return the main HTML page for the site
 func GetIndex(w http.ResponseWriter, r *http.Request) {
-	var tmpl = "index.html"
-	p := &web.Page{Title: "Welcome To Generic Inventory", Body: []byte("This is a sample Page.")}
+	var tmpl = "login.html"
+	p := &web.Page{Title: "Log in required", Body: []byte("This is a sample Page.")}
+
+	session, err := auth.Store.Get(r, "cookie-name")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	user := auth.GetUser(session)
+	var permitted = "False"
+	if user.Authenticated {
+		permitted = "True"
+	}
+	fmt.Printf("%s %s %s \n", user.Username, user.Role, permitted)
+	if user.Authenticated {
+		tmpl = "index.html"
+		p = &web.Page{Title: "Welcome To Generic Inventory", Body: []byte("This is a sample Page.")}
+	}
+
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	web.RenderTemplate(w, tmpl, p, conf.MyConfig.TmplPath)

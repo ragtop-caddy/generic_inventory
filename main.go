@@ -2,6 +2,7 @@ package main
 
 import (
 	"generic_inventory/api"
+	"generic_inventory/auth"
 	"generic_inventory/conf"
 	"generic_inventory/dao"
 	"log"
@@ -21,6 +22,10 @@ func main() {
 
 	// Configure DB Connection
 	dao.ConfigDB(c)
+
+	// Configure Auth
+	auth.SessionAuth.Client = c.DBClient
+	auth.SessionAuth.GenDefaultUser()
 
 	// Startup Standard HTTP Listener
 	go http.ListenAndServe(":80", http.HandlerFunc(api.RedirectToTLS))

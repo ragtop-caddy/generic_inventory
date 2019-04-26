@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 	"encoding/json"
-	"generic_inventory/auth"
 	"generic_inventory/conf"
 	"io"
 	"io/ioutil"
@@ -42,8 +41,6 @@ func ConfigDB(conf *conf.ServerConf) {
 	}
 
 	conf.DBClient = sslClient.Database(conf.DBName)
-	auth.SessionAuth.Client = conf.DBClient
-	auth.SessionAuth.GenDefaultUser()
 }
 
 // GetEntries - Return a json object containing people

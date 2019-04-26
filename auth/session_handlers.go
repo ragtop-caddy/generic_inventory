@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"generic_inventory/conf"
 	"generic_inventory/web"
 	"net/http"
@@ -26,17 +27,34 @@ func ValidateSession(inner http.Handler, name string) http.Handler {
 			"img":       true,
 		}
 		session, err := Store.Get(r, "cookie-name")
-		if err != nil && session.IsNew {
-			session.Options.MaxAge = -1
-			err = session.Save(r, w)
+		if session.IsNew {
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				fmt.Printf("INFO: Found bogus cookie\n")
+				session.Options.MaxAge = -1
+				err = session.Save(r, w)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				//} else {
+				//	fmt.Printf("INFO: New user session, saving cookie\n")
+				//	//err = session.Save(r, w)
+				//	if err != nil {
+				//		http.Error(w, err.Error(), http.StatusInternalServerError)
+				//	}
 			}
 		}
+		user := GetUser(session)
 		if !unprotected[path] {
-			user := GetUser(session)
-			if !user.Authenticated {
-				http.Redirect(w, r, "/forbidden", http.StatusFound)
+			if !user.Authenticated && r.URL.Path != "/" {
+				http.Redirect(w, r, "/", http.StatusFound)
+			}
+			if user.Authenticated {
+				err = session.Save(r, w)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 		}
 		inner.ServeHTTP(w, r)
@@ -64,7 +82,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	user := SessionAuth.Authenticate(r.FormValue("username"), r.FormValue("code"))
 	session.Values["user"] = user
-
+	fmt.Printf("INFO: Login got %s, saving cookie \n", session.Values["user"])
 	err = session.Save(r, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
