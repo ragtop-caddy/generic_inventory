@@ -32,6 +32,7 @@ func ValidateSession(inner http.Handler, name string) http.Handler {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
+				http.Redirect(w, r, "/", http.StatusFound)
 			}
 		}
 		user := GetUser(session)
