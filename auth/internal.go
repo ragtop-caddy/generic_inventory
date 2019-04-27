@@ -107,6 +107,7 @@ func (ia InternalAuth) retrieveUser(uid string) (creds credentials, err error) {
 	filter := bson.M{"uid": uid}
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
 	defer close()
+	// need to pull hash out and return separately
 	err = ia.Client.Collection("users").FindOne(ctx, filter).Decode(&creds)
 	return
 }

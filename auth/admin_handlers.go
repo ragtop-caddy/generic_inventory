@@ -46,6 +46,15 @@ func AdminPanel(w http.ResponseWriter, r *http.Request) {
 // RetrieveUser - Return a JSON object containing the credentials for one user
 func RetrieveUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	session, err := Store.Get(r, "cookie-name")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user := GetUser(session)
+	if user.Role != "admin" {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	result, err := SessionAuth.retrieveUser(params["uid"])

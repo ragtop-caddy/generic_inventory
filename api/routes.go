@@ -64,6 +64,12 @@ var routes = Routes{
 		auth.Logout,
 	},
 	Route{
+		"Get User",
+		"GET",
+		"/api/user/{action}/{uid}",
+		auth.RetrieveUser,
+	},
+	Route{
 		"Get Entry",
 		"GET",
 		"/api/inventory/{action}/{sku}",
