@@ -67,7 +67,19 @@ var routes = Routes{
 		"Get User",
 		"GET",
 		"/api/user/{action}/{uid}",
-		auth.RetrieveUser,
+		auth.AdminCrudHandle,
+	},
+	Route{
+		"Create User",
+		"POST",
+		"/api/user/{action}/{uid}",
+		auth.AdminCrudHandle,
+	},
+	Route{
+		"Delete User",
+		"DELETE",
+		"/api/user/{action}/{uid}",
+		auth.AdminCrudHandle,
 	},
 	Route{
 		"Get Entry",

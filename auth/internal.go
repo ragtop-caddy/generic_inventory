@@ -15,7 +15,10 @@ import (
 
 // InternalAuth - Object that implements the Authenticator interface
 type InternalAuth struct {
-	Client *mongo.Database
+	Client     *mongo.Database
+	FailLimit  int
+	Inactive   float64
+	Expiration float64
 }
 
 type passHash struct {
@@ -25,30 +28,28 @@ type passHash struct {
 
 // internalUser - Internally managed user
 type credentials struct {
-	UID        string    `json:"uid,omitempty" bson:"uid,omitempty"`
-	Fname      string    `json:"fname,omitempty" bson:"fname,omitempty"`
-	Lname      string    `json:"lname,omitempty" bson:"lname,omitempty"`
-	Email      string    `json:"email,omitempty" bson:"email,omitempty"`
-	Pass       string    `json:"pass,omitempty" bson:"pass,omitempty"`
-	Hash       string    `json:"hash,omitempty" bson:"hash,omitempty"`
-	Role       string    `json:"role,omitempty" bson:"role,omitempty"`
-	State      string    `json:"state,omitempty" bson:"state,omitempty"`
-	Inactive   int       `json:"inactive,omitempty" bson:"inactive,omitempty"`
-	Expiration int       `json:"expiration,omitempty" bson:"expiration,omitempty"`
-	Last       time.Time `json:"last,omitempty" bson:"last,omitempty"`
+	UID      string    `json:"uid,omitempty" bson:"uid,omitempty"`
+	Fname    string    `json:"fname,omitempty" bson:"fname,omitempty"`
+	Lname    string    `json:"lname,omitempty" bson:"lname,omitempty"`
+	Email    string    `json:"email,omitempty" bson:"email,omitempty"`
+	Pass     string    `json:"pass,omitempty" bson:"pass,omitempty"`
+	Hash     string    `json:"hash,omitempty" bson:"hash,omitempty"`
+	Role     string    `json:"role,omitempty" bson:"role,omitempty"`
+	Failures int       `json:"failures" bson:"failures"`
+	Enabled  bool      `json:"enabled" bson:"enabled"`
+	Last     time.Time `json:"last,omitempty" bson:"last,omitempty"`
 }
 
 // DisplayCredentials - struct to hold user information safe for display
 type DisplayCredentials struct {
-	UID        string    `json:"uid,omitempty" bson:"uid,omitempty"`
-	Fname      string    `json:"fname,omitempty" bson:"fname,omitempty"`
-	Lname      string    `json:"lname,omitempty" bson:"lname,omitempty"`
-	Email      string    `json:"email,omitempty" bson:"email,omitempty"`
-	Role       string    `json:"role,omitempty" bson:"role,omitempty"`
-	State      string    `json:"state,omitempty" bson:"state,omitempty"`
-	Inactive   int       `json:"inactive,omitempty" bson:"inactive,omitempty"`
-	Expiration int       `json:"expiration,omitempty" bson:"expiration,omitempty"`
-	Last       time.Time `json:"last,omitempty" bson:"last,omitempty"`
+	UID      string    `json:"uid,omitempty" bson:"uid,omitempty"`
+	Fname    string    `json:"fname,omitempty" bson:"fname,omitempty"`
+	Lname    string    `json:"lname,omitempty" bson:"lname,omitempty"`
+	Email    string    `json:"email,omitempty" bson:"email,omitempty"`
+	Role     string    `json:"role,omitempty" bson:"role,omitempty"`
+	Failures int       `json:"failures" bson:"failures"`
+	Enabled  bool      `json:"enabled" bson:"enabled"`
+	Last     time.Time `json:"last,omitempty" bson:"last,omitempty"`
 }
 
 type mcredentials []DisplayCredentials
@@ -98,6 +99,11 @@ func (ia InternalAuth) checkPass(uid, pass string) (ok bool, err error) {
 	return
 }
 
+func checkTime(last time.Time) (since float64) {
+	since = time.Since(last).Hours() / 24
+	return
+}
+
 func genString() (s string) {
 	n := 12
 	b := make([]byte, n)
@@ -116,14 +122,13 @@ func (ia InternalAuth) GenDefaultUser() {
 	defer close()
 	defaultUser := bson.M{
 		"$set": bson.M{
-			"uid":        "Administrator",
-			"fname":      "Inventory",
-			"lname":      "Administrator",
-			"email":      "administrator@localhost",
-			"role":       "admin",
-			"state":      "enabled",
-			"inactive":   60,
-			"expiration": 120,
+			"uid":      "Administrator",
+			"fname":    "Inventory",
+			"lname":    "Administrator",
+			"email":    "administrator@localhost",
+			"role":     "admin",
+			"failures": 0,
+			"enabled":  true,
 		},
 		"$currentDate": bson.M{
 			"last": true,
@@ -149,19 +154,64 @@ func (ia InternalAuth) GenDefaultUser() {
 func (ia InternalAuth) Authenticate(uid, pass string) (u User) {
 	u.Username = uid
 	u.Authenticated = false
-	creds, err := ia.retrieveUser(uid)
+	creds, err := ia.retrieveCreds(uid)
 	if err != nil {
 		log.Printf("ERROR: %s while retrieving user credentials", err)
 	}
-	check, err := ia.checkPass(uid, pass)
-	if err != nil {
-		log.Printf("ERROR: %s while checking user password", err)
+	u.Role = creds.Role
+	ok := CheckPasswordHash(pass, creds.Hash)
+	if !ok {
+		creds.Failures++
+		fmt.Printf("INFO: Failed login for %s \n", uid)
+	} else {
+		creds.Failures = 0
+		creds.Last = time.Now()
 	}
-	if check {
+
+	if creds.Failures > ia.FailLimit {
+		creds.Enabled = false
+		fmt.Printf("INFO: Disabling %s account due to excessive login failures \n", uid)
+	}
+
+	since := checkTime(creds.Last)
+	if since > ia.Inactive {
+		creds.Enabled = false
+		fmt.Printf("INFO: Disabling %s account due to inactivity \n", uid)
+	}
+
+	stored, err := ia.storeCreds(creds)
+	if err != nil {
+		log.Printf("ERROR: %s while updating user credentials", err)
+	}
+
+	if ok && creds.Enabled && stored {
 		u.Authenticated = true
 	}
-	u.Role = creds.Role
+
 	return u
+}
+
+func (ia InternalAuth) retrieveCreds(uid string) (creds credentials, err error) {
+	filter := bson.M{"uid": uid}
+	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+	defer close()
+	err = ia.Client.Collection("users").FindOne(ctx, filter).Decode(&creds)
+	return
+}
+
+func (ia InternalAuth) storeCreds(creds credentials) (ok bool, err error) {
+	ok = false
+	filter := bson.M{"uid": creds.UID}
+	update := bson.M{"$set": creds}
+	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+	defer close()
+	err = ia.Client.Collection("users").FindOneAndUpdate(ctx, filter, update).Err()
+	if err != nil {
+		fmt.Printf("ERROR: Got %s while storing creds \n", err)
+	} else {
+		ok = true
+	}
+	return
 }
 
 func (ia InternalAuth) retrieveUser(uid string) (creds DisplayCredentials, err error) {
@@ -190,53 +240,23 @@ func (ia InternalAuth) retrieveUsers() (results mcredentials, err error) {
 }
 
 func (ia InternalAuth) createUser(new credentials) (res *mongo.InsertOneResult, err error) {
-	hash, err := HashPassword(new.Pass)
+	new.Hash, err = HashPassword(new.Pass)
 	if err != nil {
-		log.Printf("ERROR: %s while storing user credentials", err)
+		log.Printf("ERROR: %s while generating password hash for %s \n", err, new.UID)
 	}
-	newuserDoc := bson.M{
-		"$set": bson.M{
-			"uid":        new.UID,
-			"fname":      new.Fname,
-			"lname":      new.Lname,
-			"email":      new.Email,
-			"hash":       hash,
-			"role":       new.Role,
-			"state":      new.State,
-			"inactive":   new.Inactive,
-			"expiration": new.Expiration,
-		},
-		"$currentDate": bson.M{
-			"last": true,
-		},
-	}
+	new.Failures = 0
+	new.Last = time.Now()
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
 	defer close()
-	res, err = ia.Client.Collection("users").InsertOne(ctx, newuserDoc)
+	res, err = ia.Client.Collection("users").InsertOne(ctx, new)
 	return
 }
 
-// DeleteEntry - Delete an entry
-//func (ia InternalAuth) deleteUser(uid string) (count int64, err error) {
-//	filter := bson.M{"sku": sku}
-//	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
-//	defer close()
-//	res, err := ia.Client.Collection("entries").DeleteOne(ctx, filter)
-//	count = res.DeletedCount
-//	return
-//}
-
-//func storeCreds(creds credentials, client *mongo.Database) (res *mongo.InsertOneResult, err error) {
-//	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
-//	defer close()
-//	res, err = client.Collection("users").InsertOne(ctx, creds)
-//	return
-//}
-
-//func updateCreds(creds credentials, ) (ok bool, err error) {
-//
-//}
-
-//func deleteCreds(creds credentials) (ok bool, err error) {
-//
-//}
+func (ia InternalAuth) deleteUser(uid string) (count int64, err error) {
+	filter := bson.M{"uid": uid}
+	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
+	defer close()
+	res, err := ia.Client.Collection("users").DeleteOne(ctx, filter)
+	count = res.DeletedCount
+	return
+}

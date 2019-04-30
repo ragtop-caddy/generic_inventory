@@ -25,6 +25,9 @@ func main() {
 
 	// Configure Auth
 	auth.SessionAuth.Client = c.DBClient
+	auth.SessionAuth.FailLimit = 3
+	auth.SessionAuth.Inactive = 60
+	auth.SessionAuth.Expiration = 120
 	auth.SessionAuth.GenDefaultUser()
 
 	// Startup Standard HTTP Listener
