@@ -9,7 +9,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -66,39 +65,6 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-// setPass - Function to update a user
-func (ia InternalAuth) setPass(uid, pass string) (res *mongo.UpdateResult, err error) {
-	hash, err := HashPassword(pass)
-	if err != nil {
-		log.Fatalf("ERROR: Unable to generate default password: %s", err)
-	}
-
-	filter := bson.M{"uid": uid}
-	update := bson.M{"$set": bson.M{"hash": hash}}
-	upsert := true
-	udopts := &options.UpdateOptions{Upsert: &upsert}
-	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
-	defer close()
-	res, err = ia.Client.Collection("users").UpdateOne(ctx, filter, update, udopts)
-	if err != nil {
-		log.Fatalf("ERROR: Unable to initialize the default account: %s", err)
-	}
-	return
-}
-
-func (ia InternalAuth) checkPass(uid, pass string) (ok bool, err error) {
-	var passhash passHash
-	filter := bson.M{"uid": uid}
-	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
-	defer close()
-	err = ia.Client.Collection("users").FindOne(ctx, filter).Decode(&passhash)
-	if err != nil {
-		log.Fatalf("ERROR: Unable to retrieve user password hash: %s", err)
-	}
-	ok = CheckPasswordHash(pass, passhash.Hash)
-	return
-}
-
 func checkTime(last time.Time) (since float64) {
 	since = time.Since(last).Hours() / 24
 	return
@@ -111,43 +77,33 @@ func genString() (s string) {
 		panic(err)
 	}
 	s = fmt.Sprintf("%X", b)
-	fmt.Println(s)
 	return
 }
 
 // GenDefaultUser - Function to generate a default user
 func (ia InternalAuth) GenDefaultUser() {
-	filter := bson.M{"uid": "Administrator"}
-	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
-	defer close()
-	defaultUser := bson.M{
-		"$set": bson.M{
-			"uid":      "Administrator",
-			"fname":    "Inventory",
-			"lname":    "Administrator",
-			"email":    "administrator@localhost",
-			"role":     "admin",
-			"failures": 0,
-			"enabled":  true,
-		},
-		"$currentDate": bson.M{
-			"last": true,
-		},
+	var administrator = credentials{
+		UID:      "administrator",
+		Fname:    "Default",
+		Lname:    "Admin",
+		Role:     "admin",
+		Failures: 0,
+		Enabled:  true,
+		Last:     time.Now(),
 	}
-	upsert := true
-	udopts := &options.UpdateOptions{Upsert: &upsert}
-	res, err := ia.Client.Collection("users").UpdateOne(ctx, filter, defaultUser, udopts)
-	if err != nil {
-		log.Fatalf("ERROR: Unable to initialize the default account: %s", err)
+	check, err := ia.retrieveCreds(administrator.UID)
+	if check.UID == administrator.UID {
+		return
 	}
-	fmt.Printf("Matched %v documents and updated %v documents.\n", res.MatchedCount, res.ModifiedCount)
 
-	newPass := genString()
-	res, err = ia.setPass("Administrator", newPass)
+	administrator.Pass = genString()
+
+	_, err = ia.createUser(administrator)
 	if err != nil {
-		log.Fatalf("ERROR: Unable to update password: %s", err)
+		fmt.Printf("ERROR: Could not create default admin user: %v", err)
+		return
 	}
-	fmt.Printf("Matched %v documents and updated %v documents.\n", res.MatchedCount, res.ModifiedCount)
+	fmt.Printf("INFO: Set Default Password to %s \n", administrator.Pass)
 }
 
 // Authenticate - Check password validity
@@ -201,6 +157,12 @@ func (ia InternalAuth) retrieveCreds(uid string) (creds credentials, err error) 
 
 func (ia InternalAuth) storeCreds(creds credentials) (ok bool, err error) {
 	ok = false
+	if creds.Pass != "" {
+		creds.Hash, err = HashPassword(creds.Pass)
+		if err != nil {
+			log.Printf("ERROR: %s while generating password hash for %s \n", err, creds.UID)
+		}
+	}
 	filter := bson.M{"uid": creds.UID}
 	update := bson.M{"$set": creds}
 	ctx, close := context.WithTimeout(context.Background(), 5*time.Second)
